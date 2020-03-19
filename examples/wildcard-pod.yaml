@@ -1,0 +1,181 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  annotations:
+    vault.security/enabled: "true"
+    vault.security/vault-addr: https://vault.default.svc.cluster.local:8200
+    vault.security/vault-path: secret_v2/secret/db*
+    vault.security/vault-role: milton
+    vault.security/vault-tls-secret-name: vault-consul-ca
+    vault.security/vault-use-secret-names-as-keys: "true"
+  creationTimestamp: "2020-03-18T20:06:32Z"
+  generateName: vault-wilcard-get-all-keys-
+  labels:
+    controller-uid: f6466f5b-6953-11ea-97cf-42010aa800a5
+    job-name: vault-wilcard-get-all-keys
+  name: vault-wilcard-get-all-keys-4s755
+  namespace: default
+  ownerReferences:
+  - apiVersion: batch/v1
+    blockOwnerDeletion: true
+    controller: true
+    kind: Job
+    name: vault-wilcard-get-all-keys
+    uid: f6466f5b-6953-11ea-97cf-42010aa800a5
+  resourceVersion: "28788394"
+  selfLink: /api/v1/namespaces/default/pods/vault-wilcard-get-all-keys-4s755
+  uid: f649ecdd-6953-11ea-97cf-42010aa800a5
+spec:
+  containers:
+  - args:
+    - sh
+    - -c
+    - |
+      echo "testing subtree each path as key name with a single value"
+      [ -n "$API_KEY" ] && echo "API_KEY: $API_KEY"
+      [ -n "$DATABASE_URL" ] && echo "DATABASE_URL: $DATABASE_URL"
+      [ -n "$DB_PASSWORD" ] && echo "DB_PASSWORD: $DB_PASSWORD"
+      [ -n "$APP_USER" ] && echo "APP_USER: $APP_USER"
+      [ -n "$DB_USER" ] && echo "DB_USER: $DB_USER"
+      exit 0
+    command:
+    - /secrets-consumer/secrets-consumer-env
+    env:
+    - name: VAULT_ADDR
+      value: https://vault.default.svc.cluster.local:8200
+    - name: VAULT_PATH
+      value: secret_v2/secret/db*
+    - name: VAULT_ROLE
+      value: milton
+    - name: VAULT_USE_SECRET_NAMES_AS_KEYS
+      value: "true"
+    - name: VAULT_CACERT
+      value: /etc/tls/ca.pem
+    image: alpine
+    imagePullPolicy: Always
+    name: alpine
+    resources:
+      limits:
+        cpu: 1m
+        memory: 100M
+      requests:
+        cpu: 1m
+        memory: 100M
+    terminationMessagePath: /dev/termination-log
+    terminationMessagePolicy: File
+    volumeMounts:
+    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+      name: tester-token-4v4vb
+      readOnly: true
+    - mountPath: /etc/tls/ca.pem
+      name: vault-tls
+      subPath: ca.pem
+    - mountPath: /secrets-consumer
+      name: secrets-consumer-env
+  dnsPolicy: ClusterFirst
+  enableServiceLinks: true
+  initContainers:
+  - command:
+    - sh
+    - -c
+    - cp /usr/local/bin/secrets-consumer-env /secrets-consumer/
+    image: innovia/secrets-consumer-env:0.1.0
+    imagePullPolicy: Always
+    name: copy-secrets-consumer-env
+    resources:
+      limits:
+        cpu: 50m
+        memory: 64Mi
+      requests:
+        cpu: 50m
+        memory: 64Mi
+    terminationMessagePath: /dev/termination-log
+    terminationMessagePolicy: File
+    volumeMounts:
+    - mountPath: /secrets-consumer/
+      name: secrets-consumer-env
+  nodeName: gke-standard-cluster-1-new-pool-9ce06704-n14b
+  priority: 0
+  restartPolicy: Never
+  schedulerName: default-scheduler
+  securityContext: {}
+  serviceAccount: tester
+  serviceAccountName: tester
+  terminationGracePeriodSeconds: 30
+  tolerations:
+  - effect: NoExecute
+    key: node.kubernetes.io/not-ready
+    operator: Exists
+    tolerationSeconds: 300
+  - effect: NoExecute
+    key: node.kubernetes.io/unreachable
+    operator: Exists
+    tolerationSeconds: 300
+  volumes:
+  - name: tester-token-4v4vb
+    secret:
+      defaultMode: 420
+      secretName: tester-token-4v4vb
+  - emptyDir:
+      medium: Memory
+    name: secrets-consumer-env
+  - name: vault-tls
+    secret:
+      defaultMode: 420
+      secretName: vault-consul-ca
+status:
+  conditions:
+  - lastProbeTime: null
+    lastTransitionTime: "2020-03-18T20:06:38Z"
+    reason: PodCompleted
+    status: "True"
+    type: Initialized
+  - lastProbeTime: null
+    lastTransitionTime: "2020-03-18T20:06:45Z"
+    reason: PodCompleted
+    status: "False"
+    type: Ready
+  - lastProbeTime: null
+    lastTransitionTime: "2020-03-18T20:06:45Z"
+    reason: PodCompleted
+    status: "False"
+    type: ContainersReady
+  - lastProbeTime: null
+    lastTransitionTime: "2020-03-18T20:06:32Z"
+    status: "True"
+    type: PodScheduled
+  containerStatuses:
+  - containerID: docker://ff894712baff1d6e014f1cfd7b7a478922cd4e22bd64aa7e7b425cff1e3a4130
+    image: alpine:latest
+    imageID: docker-pullable://alpine@sha256:ddba4d27a7ffc3f86dd6c2f92041af252a1f23a8e742c90e6e1297bfa1bc0c45
+    lastState: {}
+    name: alpine
+    ready: false
+    restartCount: 0
+    state:
+      terminated:
+        containerID: docker://ff894712baff1d6e014f1cfd7b7a478922cd4e22bd64aa7e7b425cff1e3a4130
+        exitCode: 0
+        finishedAt: "2020-03-18T20:06:44Z"
+        reason: Completed
+        startedAt: "2020-03-18T20:06:39Z"
+  hostIP: 10.168.0.38
+  initContainerStatuses:
+  - containerID: docker://bbd1229e95480489f163efffcbdf46da14d7b7effb9d1bda26645f1ffc6fb8c6
+    image: innovia/secrets-consumer-env:0.1.0
+    imageID: docker-pullable://innovia/secrets-consumer-env@sha256:fc3d87afe0d050d55f70dde44972830ef939e7d757f6e1c2a7c80a455daceb28
+    lastState: {}
+    name: copy-secrets-consumer-env
+    ready: true
+    restartCount: 0
+    state:
+      terminated:
+        containerID: docker://bbd1229e95480489f163efffcbdf46da14d7b7effb9d1bda26645f1ffc6fb8c6
+        exitCode: 0
+        finishedAt: "2020-03-18T20:06:37Z"
+        reason: Completed
+        startedAt: "2020-03-18T20:06:37Z"
+  phase: Succeeded
+  podIP: 10.0.4.39
+  qosClass: Guaranteed
+  startTime: "2020-03-18T20:06:32Z"

@@ -1,0 +1,37 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name:  gcp-secret-manager
+spec:
+  backoffLimit: 1
+  completions: 1
+  parallelism: 1
+  template:
+    metadata:
+      name:  gcp-secret-manager
+      annotations:
+        "gcp.secret.manager/enabled": "true"
+        "gcp.secret.manager/project-id": "ami-playground"
+        "gcp.secret.manager/secret-name": "test-secret"
+        "gcp.secret.manager/secret-version": "5"
+        "gcp.secret.manager/gcp-service-account-key-secret-name": "sm-gcp"
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: alpine
+        image: alpine
+        command:
+          - "sh"
+          - "-c"
+          - |
+              echo "testing subtree each path as key name with a single value"
+              [ -n "$API_KEY" ] && echo "API_KEY: $API_KEY"
+              [ -n "$DATABASE_URL" ] && echo "DATABASE_URL: $DATABASE_URL"
+              [ -n "$DB_PASSWORD" ] && echo "DB_PASSWORD: $DB_PASSWORD"
+              [ -n "$APP_USER" ] && echo "APP_USER: $APP_USER"
+              [ -n "$DB_USER" ] && echo "DB_USER: $DB_USER"
+              exit 0
+        resources:
+            limits:
+              cpu: 0.5m
+              memory: 100M

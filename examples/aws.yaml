@@ -1,0 +1,43 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name:  aws-secret-manager
+spec:
+  backoffLimit: 1
+  completions: 1
+  parallelism: 1
+  template:
+    metadata:
+      name:  aws-secret-manager
+      annotations:
+        "aws.secret.manager/enabled": "true"
+        "aws.secret.manager/region": "us-west-2"
+        "aws.secret.manager/role-arn": "arn:aws:iam::398492223295:role/secretManager"
+        "aws.secret.manager/secret-name": "test-secret"
+    spec:
+      restartPolicy: Never
+      serviceAccountName: tester
+      containers:
+      - name: alpine
+        image: alpine
+        # enable if you are not on AWS
+        # env:
+        # - name: AWS_ACCESS_KEY_ID
+        #   value: AKIA1234ABCDEF
+        # - name: AWS_SECRET_ACCESS_KEY
+        #   value: secret_here
+        command:
+          - "sh"
+          - "-c"
+          - |
+              echo "testing subtree each path as key name with a single value"
+              [ -n "$API_KEY" ] && echo "API_KEY: $API_KEY"
+              [ -n "$DATABASE_URL" ] && echo "DATABASE_URL: $DATABASE_URL"
+              [ -n "$DB_PASSWORD" ] && echo "DB_PASSWORD: $DB_PASSWORD"
+              [ -n "$APP_USER" ] && echo "APP_USER: $APP_USER"
+              [ -n "$DB_USER" ] && echo "DB_USER: $DB_USER"
+              exit 0
+        resources:
+            limits:
+              cpu: 0.5m
+              memory: 100M

@@ -1,0 +1,122 @@
+# Secrets Consumer webhook
+
+This chart will install a mutating admission webhook, that injects an executable to containers in a deployment/statefulset which than can request secrets from Vault through environment variable definitions.
+
+## Before you start
+
+Before you install this chart you must create a namespace for it, this is due to the order in which the resources in the charts are applied (Helm collects all of the resources in a given Chart and it's dependencies, groups them by resource type, and then installs them in a predefined order (see [here](https://github.com/helm/helm/blob/release-2.10/pkg/tiller/kind_sorter.go#L29) - Helm 2.10).
+
+The `MutatingWebhookConfiguration` gets created before the actual backend Pod which serves as the webhook itself, Kubernetes would like to mutate that pod as well, but it is not ready to mutate yet (infinite recursion in logic).
+
+### Creating the namespace
+
+The namespace must have a label of `name` with the namespace name as it's value.
+
+set the target namespace name or skip for the default name: vswh
+
+```bash
+export WEBHOOK_NS=`<namespace>`
+```
+
+```bash
+WEBHOOK_NS=${WEBHOOK_NS:-vswh}
+kubectl create namespace "${WEBHOOK_NS}"
+kubectl label ns "${WEBHOOK_NS}" name="${WEBHOOK_NS}"
+```
+
+## Installing the Chart
+
+```bash
+$ helm upgrade --namespace vswh --install vswh secrets-consumer-webhook --wait
+```
+
+**NOTE**: `--wait` is necessary because of Helm timing issues, please see [this issue](https://github.com/banzaicloud/banzai-charts/issues/888).
+
+### About GKE Private Clusters
+
+When Google configure the control plane for private clusters, they automatically configure VPC peering between your Kubernetes cluster’s network in a separate Google managed project.
+
+The auto-generated rules **only** open ports 10250 and 443 between masters and nodes. This means that in order to use the webhook component with a GKE private cluster, you must configure an additional firewall rule to allow your masters CIDR to access your webhook pod using the port 8443.
+
+You can read more information on how to add firewall rules for the GKE control plane nodes in the [GKE docs](https://cloud.google.com/kubernetes-engine/docs/how-to/private-clusters#add_firewall_rules).
+
+## Configuration
+
+The following tables lists configurable parameters of the secrets-consumer-webhook chart and their default values:
+
+| Parameter                        | Description                                                                  | Default                             |
+|----------------------------------|------------------------------------------------------------------------------|-------------------------------------|
+| affinity                         | affinities to use                                                            | `{}`                                |
+| debug                            | debug logs for webhook                                                       | `false`                             |
+| image.pullPolicy                 | image pull policy                                                            | `IfNotPresent`                      |
+| image.repository                 | image repo that contains the admission server                                | `banzaicloud/secrets-consumer-webhook` |
+| image.tag                        | image tag                                                                    | `0.9.0`                             |
+| image.imagePullSecrets           | image pull secrets for private repositories                                  | `[]`                                |
+| namespaceSelector                | namespace selector to use, will limit webhook scope                          | `{}`                                |
+| nodeSelector                     | node selector to use                                                         | `{}`                                |
+| podAnnotations                   | extra annotations to add to pod metadata                                     | `{}`                                |
+| replicaCount                     | number of replicas                                                           | `2`                                 |
+| resources                        | resources to request                                                         | `{}`                                |
+| service.externalPort             | webhook service external port                                                | `443`                               |
+| service.name                     | webhook service name                                                         | `secrets-consumer-webhook`             |
+| service.type                     | webhook service type                                                         | `ClusterIP`                         |
+| tolerations                      | tolerations to add                                                           | `[]`                                |
+| rbac.enabled                     | use rbac                                                                     | `true`                              |
+| rbac.psp.enabled                 | use pod security policy                                                      | `false`                             |
+| env.VAULT_IMAGE                  | vault image                                                                  | `vault:latest`                      |
+| env.SECRET_CONSUMER_ENV_IMAGE              | vault-env image                                                              | `innovia/secrets-consumer-env:0.1.0`      |
+| volumes                          | extra volume definitions                                                     | `[]`                                |
+| volumeMounts                     | extra volume mounts                                                          | `[]`                                |
+| configMapMutation                | enable injecting values from Vault to ConfigMaps                             | `false`                             |
+| podDisruptionBudget.enabled      | enable PodDisruptionBudget                                                   | `false`                             |
+| podDisruptionBudget.minAvailable | represents the number of Pods that must be available (integer or percentage) | `1`                                 |
+| certificate.generate             | should a new CA and TLS certificate be generated for the webhook             | `true`                              |
+| certificate.useCertManager       | should request cert-manager for getting a new CA and TLS certificate         | `false`                             |
+| certificate.ca.crt               | Base64 encoded CA certificate                                                | ``                                  |
+| certificate.server.tls.crt       | Base64 encoded TLS certificate signed by the CA                              | ``                                  |
+| certificate.server.tls.key       | Base64 encoded  private key of TLS certificate signed by the CA              | ``                                  |
+| apiSideEffectValue               | Webhook sideEffect value                                                     | `NoneOnDryRun`                      |
+
+### Certificate options
+
+There are the following options for suppling the webhook with CA and TLS certificate.
+
+#### Generate (default)
+
+The default option is to let helm generate the CA and TLS certificates on deploy time.
+
+This will renew the certificates on each deployment.
+
+```
+certificate:
+    generate: true
+```
+
+#### Manually supplied
+
+Another option is to generate everything manually and specify the TLS `crt` and `key` plus the CA `crt` as values.
+These values needs to be base64 encoded x509 certificates.
+
+```
+certificate:
+  generate: false
+  server:
+    tls:
+      crt: LS0tLS1...
+      key: LS0tLS1...
+  ca:
+    crt: LS0tLS1...
+```
+
+#### Using cert-manager
+
+If you use cert-manager in you cluster, you can instruct cert-manager to manage everything.
+The following options will let cert-manager generate TLS `certificate` and `key` plus the CA `certificate`.
+
+
+```
+certificate:
+  generate: false
+  useCertManager: true
+```
+

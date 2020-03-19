@@ -1,0 +1,104 @@
+# Default values for secrets-consumer-webhook.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 2
+
+debug: true
+
+certificate:
+    useCertManager: false
+    generate: true
+    server:
+        tls:
+            crt:
+            key:
+    ca:
+        crt:
+image:
+  repository: doitintl/secrets-consumer-webhook
+  tag: 0.1.0
+  pullPolicy: IfNotPresent
+  imagePullSecrets: []
+
+service:
+  name: secrets-consumer-webhook
+  type: ClusterIP
+  externalPort: 443
+  internalPort: 8443
+
+env:
+  VAULT_IMAGE: vault:1.3.1
+  SECRETS_CONSUMER_ENV_IMAGE: doitintl/secrets-consumer-env:0.1.0
+  # SECRETS_CONSUMER_ENV_IMAGE_PULL_POLICY: Always
+  # VAULT_CAPATH: /vault/tls
+  # used when the pod that should get secret injected does not specify
+  # an imagePullSecret
+  # DEFAULT_IMAGE_PULL_SECRET:
+  # DEFAULT_IMAGE_PULL_SECRET_NAMESPACE:
+
+metrics:
+  enabled: false
+  port: 8443
+  serviceMonitor:
+    enabled: false
+    scheme: https
+    tlsConfig:
+      insecureSkipVerify: true
+
+volumes: []
+
+volumeMounts: []
+
+podAnnotations: {}
+
+labels: {}
+
+resources: {}
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+## Assign a PriorityClassName to pods if set
+priorityClassName: ""
+
+rbac:
+  enabled: true
+  psp:
+    enabled: false
+
+# This can cause issues when used with Helm, so it is not enabled by default
+configMapMutation: false
+
+configmapFailurePolicy: Ignore
+
+podsFailurePolicy: Ignore
+
+secretsFailurePolicy: Ignore
+
+apiSideEffectValue: NoneOnDryRun
+
+namespaceSelector:
+  matchExpressions:
+  - key: name
+    operator: NotIn
+    values:
+    - kube-system
+  # matchLabels:
+  #   vault-injection: enabled
+
+# In case of the K8s cluster version is above 1.15 objectSelector is usable
+# exclude objects with certain labels from admission
+objectSelector: {}
+  # matchExpressions:
+  # - key: security.secrets-consumer-webhook/mutate
+  #   operator: NotIn
+  #   values:
+  #   - skip
+
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
