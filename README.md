@@ -21,6 +21,161 @@ The init container will copy the binary of `secrets-consumer-env` into the share
 
 The webhook will also change your command to be prefixed by the command `secrets-consumer-env`
 
+## Setting up Vault Kubernetes Backend Authentication
+
+Vault can authenticate to kubernetes using a kubernetes service account
+
+It does this by another service account called `vault-reviewer` with an auth-delegator permissions, which allows it to pass another service account token for authentication to the kubernetes master.
+
+Once the authentication to kubernetes is successful,
+Vault returns a client token that can be used to login to Vault,
+Vault will check a mapping between a vault role, service account, namespace and the policy to allows/deny the access.
+
+This `vault-reviewer` service account token will be configured inside the vault using vault CLI.
+let’s create the service account for that vault-reviewer
+
+Create the service account for that vault-reviewer:
+
+**Please note**; if you have set up Vault on any other namespace, make sure to update this file accordingly.
+
+```yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: vault-reviewer
+  namespace: default
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  name: role-tokenreview-binding
+  namespace: default
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: system:auth-delegator
+subjects:
+- kind: ServiceAccount
+  name: vault-reviewer
+  namespace: default
+```
+
+```bash
+kubectl apply -f vault-reviewer.yaml
+```
+
+Enable the Kubernetes auth backend:
+
+Make sure you are logged in to vault using the root token
+
+```bash
+$ vault login
+  Token (will be hidden):
+```
+
+```bash
+$ vault auth enable kubernetes
+Success! Enabled kubernetes auth method at: kubernetes/
+```
+
+Configure Vault with the vault-reviewer token and Kubernetes CA:
+
+**Note**: if you setup vault on any other namespace set the -n <namespace> flag after each kubectl command
+
+```bash
+  VAULT_SA_TOKEN_NAME=$(kubectl get sa vault-reviewer -o jsonpath="{.secrets[*]['name']}")
+
+  SA_JWT_TOKEN=$(kubectl get secret "$VAULT_SA_TOKEN_NAME" -o jsonpath="{.data.token}" | base64 --decode; echo)
+
+  SA_CA_CRT=$(kubectl get secret "$VAULT_SA_TOKEN_NAME" -o jsonpath="{.data['ca\.crt']}" | base64 --decode; echo)
+
+  $ vault write auth/kubernetes/config token_reviewer_jwt="$SA_JWT_TOKEN" kubernetes_host=https://kubernetes.default kubernetes_ca_cert="$SA_CA_CRT"
+
+  Success! Data written to: auth/kubernetes/config
+```
+
+### example of role mapping to service account and namespace in vault
+
+```bash
+vault write auth/kubernetes/role/tester \
+  bound_service_account_names=tester \
+  bound_service_account_namespaces=default \
+  policies=test_policy \
+  ttl=1h
+```
+
+## Setting up Vault GCP Backend Authentication
+
+### Enable the Google Cloud auth method
+
+```bash
+vault auth enable gcp
+```
+
+Configure the auth method credentials:
+
+```bash
+ vault write auth/gcp/config credentials=@/path/to/credentials.json
+```
+
+If you are using instance credentials or want to specify credentials via an environment variable, you can skip this step.
+
+### Create a named role
+
+#### For an iam-type role
+
+```bash
+  vault write auth/gcp/role/my-iam-role \
+  type="iam" \
+  policies="dev,prod" \
+  bound_service_accounts="my-service@my-project.iam.gserviceaccount.com"
+```
+
+#### For a gce-type role
+
+```bash
+vault write auth/gcp/role/my-gce-role \
+  type="gce" \
+  policies="dev,prod" \
+  bound_projects="my-project1,my-project2" \
+  bound_zones="us-east1-b" \
+  bound_labels="foo:bar,zip:zap" \
+  bound_service_accounts="my-service@my-project.iam.gserviceaccount.com"
+```
+
+### Required GCP Permissions
+
+#### Vault Server Permissions
+
+For iam-type Vault roles, Vault can be given the following roles:
+
+```console
+roles/iam.serviceAccountKeyAdmin
+```
+
+For gce-type Vault roles, Vault can be given the following roles:
+
+```console
+roles/compute.viewer
+```
+
+If you instead wish to create a custom role with only the exact GCP permissions required, use the following list of permissions:
+
+```console
+iam.serviceAccounts.get
+iam.serviceAccountKeys.get
+compute.instances.get
+compute.instanceGroups.list
+```
+
+#### Permissions For Authenticating Against Vault
+
+Note that the previously mentioned permissions are given to the Vault servers. The IAM service account or GCE instance that is authenticating against Vault must have the following role:
+
+```console
+roles/iam.serviceAccountTokenCreator
+```
+
 ## Installation
 
 Before you install this chart you must create a namespace for it, this is due to the order in which the resources in the charts are applied (Helm collects all of the resources in a given Chart and it's dependencies, groups them by resource type, and then installs them in a predefined order (see [here](https://github.com/helm/helm/blob/release-2.10/pkg/tiller/kind_sorter.go#L29) - Helm 2.10).
