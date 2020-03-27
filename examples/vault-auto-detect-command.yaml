@@ -21,7 +21,7 @@ spec:
       serviceAccountName: tester
       containers:
       - name: alpine
-        image: docker.io/innovia/secrets-consumer-webhook-detect-cmd:0.1.0
+        image: docker.io/doitintl/secrets-consumer-webhook-detect-cmd:0.1.0
         env:
         - name: API_KEY
           value: vault:API_KEY

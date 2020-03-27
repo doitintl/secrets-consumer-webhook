@@ -7,7 +7,7 @@ This version was rewrite to allow AWS, GCP and VAULT secrets manager, as well as
 
 Another variation is allowing to get explicit secrets vs all secrets from path.
 
-This Mutation webhook will mutate a Pod based on annotations and automatically inject secrets from various secrets managers like [AWS Secret Manager](https://aws.amazon.com/secrets-manager/), [GCP Secret Manager](https://cloud.google.com/secret-manager) or [Hashicorp Vault](https://www.vaultproject.io/) using its companion tool [secrets-consumer-env](https://github.com/innovia/secrets-consumer-env)
+This Mutation webhook will mutate a Pod based on annotations and automatically inject secrets from various secrets managers like [AWS Secret Manager](https://aws.amazon.com/secrets-manager/), [GCP Secret Manager](https://cloud.google.com/secret-manager) or [Hashicorp Vault](https://www.vaultproject.io/) using its companion tool [secrets-consumer-env](https://github.com/doitintl/secrets-consumer-env)
 
 Please note, this is a single secret manager setup, this tool doesn't support fetching secrets from multiple secrets managers nor it should.
 

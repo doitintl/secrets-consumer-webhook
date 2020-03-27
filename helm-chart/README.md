@@ -64,7 +64,7 @@ The following tables lists configurable parameters of the secrets-consumer-webho
 | rbac.enabled                     | use rbac                                                                     | `true`                              |
 | rbac.psp.enabled                 | use pod security policy                                                      | `false`                             |
 | env.VAULT_IMAGE                  | vault image                                                                  | `vault:latest`                      |
-| env.SECRET_CONSUMER_ENV_IMAGE              | vault-env image                                                              | `innovia/secrets-consumer-env:0.1.0`      |
+| env.SECRET_CONSUMER_ENV_IMAGE              | vault-env image                                                              | `doitintl/secrets-consumer-env:0.1.0`      |
 | volumes                          | extra volume definitions                                                     | `[]`                                |
 | volumeMounts                     | extra volume mounts                                                          | `[]`                                |
 | configMapMutation                | enable injecting values from Vault to ConfigMaps                             | `false`                             |

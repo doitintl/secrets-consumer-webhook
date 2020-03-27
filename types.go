@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/innovia/secrets-consumer-webhook/registry"
+	"github.com/doitintl/secrets-consumer-webhook/registry"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 )

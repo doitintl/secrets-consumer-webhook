@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/innovia/secrets-consumer-webhook/registry"
+	"github.com/doitintl/secrets-consumer-webhook/registry"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
@@ -456,7 +456,7 @@ func newK8SClient() (kubernetes.Interface, error) {
 }
 
 func init() {
-	viper.SetDefault("secrets_consumer_env_image", "innovia/secrets-consumer-env:1.0.0")
+	viper.SetDefault("secrets_consumer_env_image", "doitintl/secrets-consumer-env:1.0.0")
 	viper.SetDefault("secrets_consumer_env_image_pull_policy", string(corev1.PullIfNotPresent))
 	viper.SetDefault("tls_cert_file", "")
 	viper.SetDefault("tls_private_key_file", "")

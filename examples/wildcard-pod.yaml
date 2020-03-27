@@ -79,7 +79,7 @@ spec:
     - sh
     - -c
     - cp /usr/local/bin/secrets-consumer-env /secrets-consumer/
-    image: innovia/secrets-consumer-env:0.1.0
+    image: doitintl/secrets-consumer-env:0.1.0
     imagePullPolicy: Always
     name: copy-secrets-consumer-env
     resources:
@@ -162,8 +162,8 @@ status:
   hostIP: 10.168.0.38
   initContainerStatuses:
   - containerID: docker://bbd1229e95480489f163efffcbdf46da14d7b7effb9d1bda26645f1ffc6fb8c6
-    image: innovia/secrets-consumer-env:0.1.0
-    imageID: docker-pullable://innovia/secrets-consumer-env@sha256:fc3d87afe0d050d55f70dde44972830ef939e7d757f6e1c2a7c80a455daceb28
+    image: doitintl/secrets-consumer-env:0.1.0
+    imageID: docker-pullable://doitintl/secrets-consumer-env@sha256:fc3d87afe0d050d55f70dde44972830ef939e7d757f6e1c2a7c80a455daceb28
     lastState: {}
     name: copy-secrets-consumer-env
     ready: true
