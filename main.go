@@ -395,9 +395,6 @@ func (mw *mutatingWebhook) SecretsMutator(ctx context.Context, obj metav1.Object
 			if smCfg.vault.config.addr == "" {
 				err = fmt.Errorf("Error getting vault address - make sure you set the annotation \"vault.security/enabled\" on the Pod")
 			}
-			if smCfg.vault.config.tlsSecretName == "" {
-				err = fmt.Errorf("Error getting vault TLS secret name - make sure you set the annotation \"vault.security/vault-tls-secret-name\"")
-			}
 			if smCfg.vault.config.path == "" {
 				err = fmt.Errorf("Error getting vault path - make sure you set the annotation \"vault.security/vault-path\"")
 			}
