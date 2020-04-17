@@ -17,7 +17,7 @@ certificate:
         crt:
 image:
   repository: doitintl/secrets-consumer-webhook
-  tag: 0.1.2
+  tag: 0.1.3
   pullPolicy: IfNotPresent
   imagePullSecrets: []
 
@@ -29,7 +29,7 @@ service:
 
 env:
   VAULT_IMAGE: vault:1.3.1
-  SECRETS_CONSUMER_ENV_IMAGE: doitintl/secrets-consumer-env:0.1.1
+  SECRETS_CONSUMER_ENV_IMAGE: doitintl/secrets-consumer-env:0.1.3
   # SECRETS_CONSUMER_ENV_IMAGE_PULL_POLICY: Always
   # VAULT_CAPATH: /vault/tls
   # used when the pod that should get secret injected does not specify
