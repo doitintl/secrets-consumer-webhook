@@ -180,6 +180,7 @@ roles/iam.serviceAccountTokenCreator
 
 Before you install this chart you must create a namespace for it, this is due to the order in which the resources in the charts are applied (Helm collects all of the resources in a given Chart and it's dependencies, groups them by resource type, and then installs them in a predefined order (see [here](https://github.com/helm/helm/blob/release-2.10/pkg/tiller/kind_sorter.go#L29) - Helm 2.10).
 
+**Note: this namespace is excluded from the mutations**
 The `MutatingWebhookConfiguration` gets created before the actual backend Pod which serves as the webhook itself, Kubernetes would like to mutate that pod as well, but it is not ready to mutate yet (infinite recursion in logic).
 
 The namespace must have a label of `name` with the namespace name as it's value.
@@ -199,7 +200,7 @@ kubectl label ns "${WEBHOOK_NS}" name="${WEBHOOK_NS}"
 Use the helm chart to install the webhook:
 
 ```bash
-helm upgrade --namespace secrets-consumer-wh --install secrets-consumer-webhook secrets-consumer-webhook --wait
+helm upgrade --namespace ${WEBHOOK_NS} --install secrets-consumer-webhook helm-chart --wait
 ```
 
 **NOTE**: `--wait` is necessary because of Helm timing issues, please see [this issue](https://github.com/banzaicloud/banzai-charts/issues/888).
