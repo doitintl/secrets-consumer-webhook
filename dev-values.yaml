@@ -1,0 +1,8 @@
+image:
+  tag: 0.2.0-r2.2
+  pullPolicy: Always
+
+env:
+  VAULT_IMAGE: vault:1.4.0
+  SECRETS_CONSUMER_ENV_IMAGE: doitintl/secrets-consumer-env:0.2.0-r2.2
+  # SECRETS_CONSUMER_ENV_IMAGE_PULL_POLICY: Always

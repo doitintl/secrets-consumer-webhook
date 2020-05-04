@@ -261,22 +261,36 @@ env:
 | :--- |:---|:---:|:---|
 |"vault.security/enabled"| enable the Vault secret manager | - | false |
 |"vault.security/vault-addr" | Vault cluster service address | Yes | - |
+|"vault.security/vault-tls-secret-name" | Vault TLS secret name  | No | Latest |
+|"vault.security/vault-role" | Vault role to access the secret path  | Yes | - |
+|"vault.security/k8s-token-path" | alternate kubernetes service account token path  | No | `/var/run/secrets/kubernetes.io/serviceaccount/token` |
+
+### Single Secret Annotations
+
 |"vault.security/vault-path" | Vault secret path  | Yes | - |
 |"vault.security/vault-secret-version" | Vault secret version (if using v2 secret engine)  | Yes | - |
 |"vault.security/vault-use-secret-names-as-keys" | treat secret path ending with `/` as directory where secret name is the key and a single value in each  | No | - |
-|"vault.security/vault-role" | Vault role to access the secret path  | Yes | - |
-|"vault.security/vault-tls-secret-name" | Vault TLS secret name  | No | Latest |
-|"vault.security/k8s-token-path" | alternate kubernetes service account token path  | No | `/var/run/secrets/kubernetes.io/serviceaccount/token` |
+
+### Multiple Secret Annotations
+
+|"vault.security/secret-config-x" | x is a numerical number for secret alpha-numeric ordering, JSON string format | Yes | - |
+
+#### JSON string format for secret-config:
+
+```yaml
+vault.security/secret-config-1: '{"Path": "secrets/v2/plain/secrets/path/app", "Version": "2", "use-secret-names-as-keys": "true"}'
+```
 
 Vault can be used with 2 backend authentications (GCP / Kubernetes)
 
 ##### Kubernetes backend authentication
 
-Default authentication method
+Default authentication method, you can point it at another kubernetes backend path (multi kubernetes clusters)
 
 | Name| Description | Required | Default|
 | :--- |:---|:---:|:---|
 |"vault.security/k8s-token-path" | alternate kubernetes service account token path  | No | `/var/run/secrets/kubernetes.io/serviceaccount/token` |
+|"vault.security/k8s-backend-path" | alternate kubernetes backend path  | No | `auth/kubernetes/login` |
 
 ##### GCP Backend authentication
 

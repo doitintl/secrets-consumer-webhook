@@ -3,7 +3,7 @@ kind: Job
 metadata:
   name:  vault-explicit-keys
 spec:
-  backoffLimit: 1
+  backoffLimit: 0
   completions: 1
   parallelism: 1
   template:
@@ -12,10 +12,9 @@ spec:
       annotations:
         vault.security/enabled: "true"
         vault.security/vault-addr: "https://vault.default.svc.cluster.local:8200"
-        vault.security/vault-role: "milton"
-        vault.security/vault-path: "secret_v2/milton"
         vault.security/vault-tls-secret-name: "vault-consul-ca"
-        vault.security/vault-use-secret-names-as-keys: "true"
+        vault.security/vault-role: "tester"
+        vault.security/vault-path: "secrets/v1/some/secrets/path"
     spec:
       restartPolicy: Never
       serviceAccountName: tester
@@ -23,7 +22,8 @@ spec:
       - name: alpine
         image: alpine
         command:
-          - "sh"
+          - "/bin/sh"
+        args:
           - "-c"
           - |
               echo "testing subtree each path as key name with a single value"
