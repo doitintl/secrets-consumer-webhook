@@ -1,6 +1,8 @@
-ARG GO_VERSION=1.14
+ARG GO_VERSION=1.15
 
 FROM golang:${GO_VERSION}-alpine AS builder
+ARG VERSION
+ARG COMMIT
 
 RUN apk add --update --no-cache ca-certificates make git curl
 
@@ -16,13 +18,15 @@ COPY go.* /build/
 RUN go mod download
 
 COPY . /build
-RUN go install .
+RUN go build -ldflags="-X github.com/innovia/secrets-consumer-webhook/version.version=${VERSION} -X github.com/innovia/secrets-consumer-webhook/version.gitCommitID=${COMMIT}"
+RUN cp secrets-consumer-webhook /usr/local/bin/
+RUN chmod a+x /usr/local/bin/secrets-consumer-webhook
 
-FROM alpine:3.10
+FROM alpine
 
 RUN apk add --update libcap && rm -rf /var/cache/apk/*
 
-COPY --from=builder /go/bin/secrets-consumer-webhook /usr/local/bin/secrets-consumer-webhook
+COPY --from=builder /usr/local/bin/secrets-consumer-webhook /usr/local/bin/
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
 ENV DEBUG false

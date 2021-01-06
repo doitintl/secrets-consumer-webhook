@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -21,8 +23,8 @@ func (gcp *gcp) mutateContainer(container corev1.Container) corev1.Container {
 	if gcp.config.serviceAccountKeySecretName != "" {
 		container.VolumeMounts = append(container.VolumeMounts, []corev1.VolumeMount{
 			{
-				Name:      "google-cloud-key",
-				MountPath: "/var/run/secret/cloud.google.com",
+				Name:      VolumeMountGoogleCloudKeyName,
+				MountPath: VolumeMountGoogleCloudKeyPath,
 			},
 		}...)
 	}
@@ -52,7 +54,7 @@ func (gcp *gcp) setEnvVars() []corev1.EnvVar {
 		envVars = append(envVars, []corev1.EnvVar{
 			{
 				Name:  "GOOGLE_APPLICATION_CREDENTIALS",
-				Value: "/var/run/secret/cloud.google.com/service-account.json",
+				Value: fmt.Sprintf("%s/%s", VolumeMountGoogleCloudKeyPath, GCPServiceAccountCredentialsFileName),
 			},
 		}...)
 	}

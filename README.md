@@ -7,7 +7,7 @@ This version was rewrite to allow AWS, GCP and VAULT secrets manager, as well as
 
 Another variation is allowing to get explicit secrets vs all secrets from path.
 
-This Mutation webhook will mutate a Pod based on annotations and automatically inject secrets from various secrets managers like [AWS Secret Manager](https://aws.amazon.com/secrets-manager/), [GCP Secret Manager](https://cloud.google.com/secret-manager) or [Hashicorp Vault](https://www.vaultproject.io/) using its companion tool [secrets-consumer-env](https://github.com/doitintl/secrets-consumer-env)
+This Mutation webhook will mutate a Pod based on annotations and automatically inject secrets from various secrets managers like [AWS Secret Manager](https://aws.amazon.com/secrets-manager/), [GCP Secret Manager](https://cloud.google.com/secret-manager) or [Hashicorp Vault](https://www.vaultproject.io/) using its companion tool [secrets-consumer-env](https://github.com/innovia/secrets-consumer-env)
 
 Please note, this is a single secret manager setup, this tool doesn't support fetching secrets from multiple secrets managers nor it should.
 
@@ -259,24 +259,38 @@ env:
 
 | Name| Description | Required | Default|
 | :--- |:---|:---:|:---|
-|"vault.security/enabled"| enable the Vault secret manager | - | false |
-|"vault.security/vault-addr" | Vault cluster service address | Yes | - |
-|"vault.security/vault-path" | Vault secret path  | Yes | - |
-|"vault.security/vault-secret-version" | Vault secret version (if using v2 secret engine)  | Yes | - |
-|"vault.security/vault-use-secret-names-as-keys" | treat secret path ending with `/` as directory where secret name is the key and a single value in each  | No | - |
-|"vault.security/vault-role" | Vault role to access the secret path  | Yes | - |
-|"vault.security/vault-tls-secret-name" | Vault TLS secret name  | No | Latest |
-|"vault.security/k8s-token-path" | alternate kubernetes service account token path  | No | `/var/run/secrets/kubernetes.io/serviceaccount/token` |
+|"vault.secret.manager/enabled"| enable the Vault secret manager | - | false |
+|"vault.secret.manager/service" | Vault cluster service address | Yes | - |
+|"vault.secret.manager/tls-secret" | Vault TLS secret name  | No | Latest |
+|"vault.secret.manager/role" | Vault role to access the secret path  | Yes | - |
+|"vault.secret.manager/k8s-token-path" | alternate kubernetes service account token path  | No | `/var/run/secrets/kubernetes.io/serviceaccount/token` |
+
+### Single Secret Annotations
+
+|"vault.secret.manager/path" | Vault secret path  | Yes | - |
+|"vault.secret.manager/secret-version" | Vault secret version (if using v2 secret engine)  | Yes | - |
+|"vault.secret.manager/use-secret-names-as-keys" | treat secret path ending with `/` as directory where secret name is the key and a single value in each  | No | - |
+
+### Multiple Secret Annotations
+
+|"vault.secret.manager/secret-config-x" | x is a numerical number for secret alpha-numeric ordering, JSON string format | Yes | - |
+
+#### JSON string format for secret-config:
+
+```yaml
+vault.secret.manager/secret-config-1: '{"Path": "secrets/v2/plain/secrets/path/app", "Version": "2", "use-secret-names-as-keys": "true"}'
+```
 
 Vault can be used with 2 backend authentications (GCP / Kubernetes)
 
 ##### Kubernetes backend authentication
 
-Default authentication method
+Default authentication method, you can point it at another kubernetes backend path (multi kubernetes clusters)
 
 | Name| Description | Required | Default|
 | :--- |:---|:---:|:---|
-|"vault.security/k8s-token-path" | alternate kubernetes service account token path  | No | `/var/run/secrets/kubernetes.io/serviceaccount/token` |
+|"vault.secret.manager/k8s-token-path" | alternate kubernetes service account token path  | No | `/var/run/secrets/kubernetes.io/serviceaccount/token` |
+|"vault.secret.manager/auth-path" | alternate kubernetes backend auth path  | No | `auth/kubernetes/login` |
 
 ##### GCP Backend authentication
 
@@ -284,5 +298,5 @@ Use GCP service account to authenticate to Vault
 
 | Name| Description | Required | Default|
 | :--- |:---|:---:|:---|
-|"vault.security/gcp-service-account-key-secret-name" | GCP IAM service account secret name (file name **must be** `service-account.json`) to login with gcp  | No | Latest |
-|"vault.security/vault-tls-secret-name" | Vault TLS secret name  | No | Latest |
+|"vault.secret.manager/gcp-service-account-key-secret-name" | GCP IAM service account secret name (file name **must be** `service-account.json`) to login with gcp  | No | Latest |
+|"vault.secret.manager/tls-secret" | Vault TLS secret name  | No | Latest |

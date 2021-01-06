@@ -3,25 +3,25 @@ kind: Job
 metadata:
   name:  vault-auto-detect-command
 spec:
-  backoffLimit: 1
+  backoffLimit: 0
   completions: 1
   parallelism: 1
   template:
     metadata:
       name:  vault-auto-detect-command
       annotations:
-        vault.security/enabled: "true"
-        vault.security/vault-addr: "https://vault.default.svc.cluster.local:8200"
-        vault.security/vault-role: "milton"
-        vault.security/vault-path: "secret_v2/milton"
-        vault.security/vault-tls-secret-name: "vault-consul-ca"
-        vault.security/vault-use-secret-names-as-keys: "true"
+        vvault.secret.manager/enabled: "true"
+        vvault.secret.manager/service: "https://vault.default.svc.cluster.local:8200"
+        vvault.secret.manager/role: "tester"
+        vvault.secret.manager/path: "secrets/v1/some/secrets/path"
+        vvault.secret.manager/tls-secret: "vault-consul-ca"
+        vvault.secret.manager/use-secret-names-as-keys: "true"
     spec:
       restartPolicy: Never
       serviceAccountName: tester
       containers:
       - name: alpine
-        image: docker.io/doitintl/secrets-consumer-webhook-detect-cmd:0.1.0
+        image: docker.io/innovia/secrets-consumer-webhook-detect-cmd:0.1.0
         env:
         - name: API_KEY
           value: vault:API_KEY

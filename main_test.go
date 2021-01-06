@@ -5,7 +5,6 @@ import (
 
 	cmp "github.com/google/go-cmp/cmp"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 	fake "k8s.io/client-go/kubernetes/fake"
 )
@@ -38,6 +37,18 @@ func getSecretManagerConfig(secretManager string) secretManagerConfig {
 		smCfg.vault.config.tokenPath = "/tmp/key"
 		smCfg.vault.config.backend = "kubernetes"
 		smCfg.vault.config.useSecretNamesAsKeys = true
+	case "vault-multi":
+		smCfg.vault.config.enabled = true
+		smCfg.vault.config.addr = "https://vault:8200"
+		smCfg.vault.config.role = "x-role"
+		smCfg.vault.config.tlsSecretName = "vault-tls"
+		smCfg.vault.config.backend = "kubernetes"
+		smCfg.vault.config.secretConfigs = []string{
+			`{"path": "/some/secret/path-1", "version": "3", "use-secret-names-as-keys":  true}`,
+			`{"path": "/some/secret/path-2"}`,
+			`{"path": "/some/secret/path-3", "use-secret-names-as-keys":  true}`,
+		}
+
 	case "vault-gcp":
 		smCfg.vault.config.enabled = true
 		smCfg.vault.config.addr = "https://vault:8200"
@@ -118,7 +129,8 @@ func Test_mutatingWebhook_mutateContainers(t *testing.T) {
 					},
 				},
 			},
-		}, {
+		},
+		{
 			name: "Will mutate container for AWS",
 			fields: fields{
 				k8sClient: fake.NewSimpleClientset(),
@@ -128,8 +140,8 @@ func Test_mutatingWebhook_mutateContainers(t *testing.T) {
 					{
 						Name:    "MyContainer",
 						Image:   "some-image",
-						Command: []string{"/app"},
-						Args:    nil,
+						Command: []string{"/bin/bash"},
+						Args:    []string{"-c", "echo 'ACCESS_KEY: $AWS_ACCESS_KEY'"},
 						Env: []corev1.EnvVar{
 							{Name: "SOME_VARIABLE", Value: "non-of-your-business"},
 						},
@@ -144,13 +156,15 @@ func Test_mutatingWebhook_mutateContainers(t *testing.T) {
 					Name:    "MyContainer",
 					Image:   "some-image",
 					Command: []string{"/secrets-consumer/secrets-consumer-env"},
-					Args:    []string{"/app"},
+					Args: []string{
+						"aws",
+						"--region=us-west-2",
+						"--secret-name=test-aws-secret",
+						"--previous-version=true",
+						"-- /bin/bash -c echo 'ACCESS_KEY: $AWS_ACCESS_KEY'",
+					},
 					Env: []corev1.EnvVar{
 						{Name: "SOME_VARIABLE", Value: "non-of-your-business"},
-						{Name: "SECRET_NAME", Value: "test-aws-secret"},
-						{Name: "REGION", Value: "us-west-2"},
-						{Name: "ROLE_ARN", Value: "arn:aws:iam::user:role/secretmanger"},
-						{Name: "PREVIOUS_VERSION", Value: "true"},
 					},
 					VolumeMounts: []corev1.VolumeMount{
 						{Name: "secrets-consumer-env", MountPath: "/secrets-consumer"},
@@ -167,8 +181,8 @@ func Test_mutatingWebhook_mutateContainers(t *testing.T) {
 					{
 						Name:    "MyContainer",
 						Image:   "some-image",
-						Command: []string{"/app"},
-						Args:    nil,
+						Command: []string{"/bin/bash"},
+						Args:    []string{"-c", "echo 'API_KEY: $API_KEY'"},
 						Env: []corev1.EnvVar{
 							{Name: "HOST", Value: "127.0.0.1"},
 						},
@@ -183,18 +197,21 @@ func Test_mutatingWebhook_mutateContainers(t *testing.T) {
 					Name:    "MyContainer",
 					Image:   "some-image",
 					Command: []string{"/secrets-consumer/secrets-consumer-env"},
-					Args:    []string{"/app"},
+					Args: []string{
+						"gcp",
+						"--project-id=project-x",
+						"--secret-name=gcp-test-secret",
+						"--secret-version=5",
+						"-- /bin/bash -c echo 'API_KEY: $API_KEY'",
+					},
 					Env: []corev1.EnvVar{
 						{Name: "HOST", Value: "127.0.0.1"},
-						{Name: "SECRET_NAME", Value: "gcp-test-secret"},
-						{Name: "PROJECT_ID", Value: "project-x"},
-						{Name: "SECRET_VERSION", Value: "5"},
 						{
 							Name:  "GOOGLE_APPLICATION_CREDENTIALS",
 							Value: "/var/run/secret/cloud.google.com/service-account.json",
 						},
 					},
-					VolumeMounts: []v1.VolumeMount{
+					VolumeMounts: []corev1.VolumeMount{
 						{Name: "google-cloud-key", MountPath: "/var/run/secret/cloud.google.com"},
 						{Name: "secrets-consumer-env", MountPath: "/secrets-consumer"},
 					},
@@ -210,8 +227,8 @@ func Test_mutatingWebhook_mutateContainers(t *testing.T) {
 					{
 						Name:    "MyContainer",
 						Image:   "some-image",
-						Command: []string{"/app"},
-						Args:    nil,
+						Command: []string{"/bin/bash"},
+						Args:    []string{"-c", "echo 'API_KEY: $API_KEY'"},
 						Env: []corev1.EnvVar{
 							{Name: "HOST", Value: "127.0.0.1"},
 						},
@@ -226,17 +243,20 @@ func Test_mutatingWebhook_mutateContainers(t *testing.T) {
 					Name:    "MyContainer",
 					Image:   "some-image",
 					Command: []string{"/secrets-consumer/secrets-consumer-env"},
-					Args:    []string{"/app"},
+					Args: []string{
+						"vault",
+						"--role=x-role",
+						"--token-path=/tmp/key",
+						"--path=/secret/data/top-secret",
+						"--names-as-keys",
+						"-- /bin/bash -c echo 'API_KEY: $API_KEY'",
+					},
 					Env: []corev1.EnvVar{
 						{Name: "HOST", Value: "127.0.0.1"},
 						{Name: "VAULT_ADDR", Value: "https://vault:8200"},
-						{Name: "VAULT_PATH", Value: "/secret/data/top-secret"},
-						{Name: "VAULT_ROLE", Value: "x-role"},
-						{Name: "TOKEN_PATH", Value: "/tmp/key"},
-						{Name: "VAULT_USE_SECRET_NAMES_AS_KEYS", Value: "true"},
 						{Name: "VAULT_CACERT", Value: "/etc/tls/ca.pem"},
 					},
-					VolumeMounts: []v1.VolumeMount{
+					VolumeMounts: []corev1.VolumeMount{
 						{Name: "vault-tls", MountPath: "/etc/tls/ca.pem", SubPath: "ca.pem"},
 						{Name: "secrets-consumer-env", MountPath: "/secrets-consumer"},
 					},
@@ -252,8 +272,8 @@ func Test_mutatingWebhook_mutateContainers(t *testing.T) {
 					{
 						Name:    "MyContainer",
 						Image:   "some-image",
-						Command: []string{"/app"},
-						Args:    nil,
+						Command: []string{"/bin/bash"},
+						Args:    []string{"-c", "echo 'API_KEY: $API_KEY'"},
 						Env: []corev1.EnvVar{
 							{Name: "HOST", Value: "127.0.0.1"},
 						},
@@ -268,19 +288,19 @@ func Test_mutatingWebhook_mutateContainers(t *testing.T) {
 					Name:    "MyContainer",
 					Image:   "some-image",
 					Command: []string{"/secrets-consumer/secrets-consumer-env"},
-					Args:    []string{"/app"},
+					Args: []string{
+						"vault",
+						"--backend=gcp",
+						"--google-application-credentials=/var/run/secret/cloud.google.com/service-account.json",
+						"--role=x-role",
+						"--token-path=/tmp/key",
+						"--path=/secret/data/top-secret",
+						"--names-as-keys",
+						"-- /bin/bash -c echo 'API_KEY: $API_KEY'",
+					},
 					Env: []corev1.EnvVar{
 						{Name: "HOST", Value: "127.0.0.1"},
 						{Name: "VAULT_ADDR", Value: "https://vault:8200"},
-						{Name: "VAULT_PATH", Value: "/secret/data/top-secret"},
-						{Name: "VAULT_ROLE", Value: "x-role"},
-						{Name: "VAULT_BACKEND", Value: "gcp"},
-						{
-							Name:  "GOOGLE_APPLICATION_CREDENTIALS",
-							Value: "/var/run/secret/cloud.google.com/service-account.json",
-						},
-						{Name: "TOKEN_PATH", Value: "/tmp/key"},
-						{Name: "VAULT_USE_SECRET_NAMES_AS_KEYS", Value: "true"},
 						{Name: "VAULT_CACERT", Value: "/etc/tls/ca.pem"},
 					},
 					VolumeMounts: []corev1.VolumeMount{
@@ -291,7 +311,7 @@ func Test_mutatingWebhook_mutateContainers(t *testing.T) {
 				},
 			},
 		}, {
-			name: "Will mutate container for Vault with a prefix",
+			name: "Will mutate container for Vault with a multiple secret-configs",
 			fields: fields{
 				k8sClient: fake.NewSimpleClientset(),
 			},
@@ -307,7 +327,7 @@ func Test_mutatingWebhook_mutateContainers(t *testing.T) {
 						},
 					},
 				},
-				secretManagerConfig: getSecretManagerConfig("vault-gcp"),
+				secretManagerConfig: getSecretManagerConfig("vault-multi"),
 			},
 			mutated: true,
 			wantErr: false,
@@ -316,23 +336,20 @@ func Test_mutatingWebhook_mutateContainers(t *testing.T) {
 					Name:    "MyContainer",
 					Image:   "some-image",
 					Command: []string{"/secrets-consumer/secrets-consumer-env"},
-					Args:    []string{"/app"},
+					Args: []string{
+						"vault",
+						"--role=x-role",
+						`--secret-config={"path": "/some/secret/path-1", "version": "3", "use-secret-names-as-keys":  true}`,
+						`--secret-config={"path": "/some/secret/path-2"}`,
+						`--secret-config={"path": "/some/secret/path-3", "use-secret-names-as-keys":  true}`,
+						"-- /app",
+					},
 					Env: []corev1.EnvVar{
 						{Name: "API_KEY", Value: "vault:API_KEY"},
 						{Name: "VAULT_ADDR", Value: "https://vault:8200"},
-						{Name: "VAULT_PATH", Value: "/secret/data/top-secret"},
-						{Name: "VAULT_ROLE", Value: "x-role"},
-						{Name: "VAULT_BACKEND", Value: "gcp"},
-						{
-							Name:  "GOOGLE_APPLICATION_CREDENTIALS",
-							Value: "/var/run/secret/cloud.google.com/service-account.json",
-						},
-						{Name: "TOKEN_PATH", Value: "/tmp/key"},
-						{Name: "VAULT_USE_SECRET_NAMES_AS_KEYS", Value: "true"},
 						{Name: "VAULT_CACERT", Value: "/etc/tls/ca.pem"},
 					},
 					VolumeMounts: []corev1.VolumeMount{
-						{Name: "google-cloud-key", MountPath: "/var/run/secret/cloud.google.com"},
 						{Name: "vault-tls", MountPath: "/etc/tls/ca.pem", SubPath: "ca.pem"},
 						{Name: "secrets-consumer-env", MountPath: "/secrets-consumer"},
 					},
@@ -364,15 +381,18 @@ func Test_mutatingWebhook_mutateContainers(t *testing.T) {
 					Name:    "MyContainer",
 					Image:   "some-image",
 					Command: []string{"/secrets-consumer/secrets-consumer-env"},
-					Args:    []string{"/app"},
+					Args: []string{
+						"vault",
+						"--role=x-role",
+						"--token-path=/tmp/key",
+						"--path=/secret/data/top-secret",
+						"--names-as-keys",
+						"--version=2",
+						"-- /app",
+					},
 					Env: []corev1.EnvVar{
 						{Name: "API_KEY", Value: "vault:API_KEY"},
 						{Name: "VAULT_ADDR", Value: "https://vault:8200"},
-						{Name: "VAULT_PATH", Value: "/secret/data/top-secret"},
-						{Name: "VAULT_ROLE", Value: "x-role"},
-						{Name: "TOKEN_PATH", Value: "/tmp/key"},
-						{Name: "VAULT_USE_SECRET_NAMES_AS_KEYS", Value: "true"},
-						{Name: "VAULT_SECRET_VERSION", Value: "2"},
 						{Name: "VAULT_CACERT", Value: "/etc/tls/ca.pem"},
 					},
 					VolumeMounts: []corev1.VolumeMount{

@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/doitintl/secrets-consumer-webhook/registry"
+	"github.com/innovia/secrets-consumer-webhook/registry"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 )
@@ -13,7 +13,6 @@ type secretManagerConfig struct {
 	explicitSecrets bool // only get secrets that match the prefix `secret:`
 }
 
-// MutatingWebhook holds k8s client interface
 type mutatingWebhook struct {
 	k8sClient kubernetes.Interface
 	registry  registry.ImageRegistry
