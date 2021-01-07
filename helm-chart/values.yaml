@@ -16,8 +16,8 @@ certificate:
     ca:
         crt:
 image:
-  repository: innvoia/secrets-consumer-webhook
-  tag: 0.2.0
+  repository: innovia/secrets-consumer-webhook
+  tag: 1.0.0
   pullPolicy: IfNotPresent
   imagePullSecrets: []
 
