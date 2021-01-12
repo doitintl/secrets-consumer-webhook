@@ -325,6 +325,11 @@ func (mw *mutatingWebhook) mutatePod(pod *corev1.Pod, secretManagerConfig secret
 		pod.Spec.Volumes = append(pod.Spec.Volumes, mw.getVolumes(pod.Spec.Volumes, secretManagerConfig)...)
 		mw.logger.Debugf("Successfully appended pod spec volumes")
 	}
+
+	if viper.GetString("secrets_consumer_env_image_pull_secret_name") != "" {
+		pod.Spec.ImagePullSecrets = append(pod.Spec.ImagePullSecrets, corev1.LocalObjectReference{Name: viper.GetString("secrets_consumer_env_image_pull_secret_name")})
+	}
+
 	return nil
 }
 
@@ -494,6 +499,7 @@ func newK8SClient() (kubernetes.Interface, error) {
 func init() {
 	viper.SetDefault("secrets_consumer_env_image", "innovia/secrets-consumer-env:1.0.0")
 	viper.SetDefault("secrets_consumer_env_image_pull_policy", string(corev1.PullIfNotPresent))
+	viper.SetDefault("secrets_consumer_env_image_pull_secret_name", "")
 	viper.SetDefault("tls_cert_file", "")
 	viper.SetDefault("tls_private_key_file", "")
 	viper.SetDefault("listen_address", ":8443")
