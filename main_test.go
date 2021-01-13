@@ -34,14 +34,18 @@ func getSecretManagerConfig(secretManager string) secretManagerConfig {
 		smCfg.vault.config.path = "/secret/data/top-secret"
 		smCfg.vault.config.role = "x-role"
 		smCfg.vault.config.tlsSecretName = "vault-tls"
+		smCfg.vault.config.vaultCACert = "vault-ca.pem"
 		smCfg.vault.config.tokenPath = "/tmp/key"
 		smCfg.vault.config.backend = "kubernetes"
 		smCfg.vault.config.useSecretNamesAsKeys = true
+		smCfg.vault.config.kubernetesBackend = "/alt/kubernetes/path"
+		smCfg.vault.config.version = "5"
 	case "vault-multi":
 		smCfg.vault.config.enabled = true
 		smCfg.vault.config.addr = "https://vault:8200"
 		smCfg.vault.config.role = "x-role"
 		smCfg.vault.config.tlsSecretName = "vault-tls"
+		smCfg.vault.config.vaultCACert = "vault-ca.pem"
 		smCfg.vault.config.backend = "kubernetes"
 		smCfg.vault.config.secretConfigs = []string{
 			`{"path": "/some/secret/path-1", "version": "3", "use-secret-names-as-keys":  true}`,
@@ -55,6 +59,7 @@ func getSecretManagerConfig(secretManager string) secretManagerConfig {
 		smCfg.vault.config.path = "/secret/data/top-secret"
 		smCfg.vault.config.role = "x-role"
 		smCfg.vault.config.tlsSecretName = "vault-tls"
+		smCfg.vault.config.vaultCACert = "vault-ca.pem"
 		smCfg.vault.config.tokenPath = "/tmp/key"
 		smCfg.vault.config.backend = "gcp"
 		smCfg.vault.config.useSecretNamesAsKeys = true
@@ -65,6 +70,7 @@ func getSecretManagerConfig(secretManager string) secretManagerConfig {
 		smCfg.vault.config.path = "/secret/data/top-secret"
 		smCfg.vault.config.role = "x-role"
 		smCfg.vault.config.tlsSecretName = "vault-tls"
+		smCfg.vault.config.vaultCACert = "vault-ca.pem"
 		smCfg.vault.config.tokenPath = "/tmp/key"
 		smCfg.vault.config.backend = "kubernetes"
 		smCfg.vault.config.useSecretNamesAsKeys = true
@@ -138,8 +144,8 @@ func Test_mutatingWebhook_mutateContainers(t *testing.T) {
 			args: args{
 				containers: []corev1.Container{
 					{
-						Name:    "MyContainer",
-						Image:   "some-image",
+						Name:    "AWSContainer",
+						Image:   "some-image-aws",
 						Command: []string{"/bin/bash"},
 						Args:    []string{"-c", "echo 'ACCESS_KEY: $AWS_ACCESS_KEY'"},
 						Env: []corev1.EnvVar{
@@ -153,15 +159,19 @@ func Test_mutatingWebhook_mutateContainers(t *testing.T) {
 			wantErr: false,
 			wantedContainers: []corev1.Container{
 				{
-					Name:    "MyContainer",
-					Image:   "some-image",
+					Name:    "AWSContainer",
+					Image:   "some-image-aws",
 					Command: []string{"/secrets-consumer/secrets-consumer-env"},
 					Args: []string{
 						"aws",
 						"--region=us-west-2",
 						"--secret-name=test-aws-secret",
+						"--role-arn=arn:aws:iam::user:role/secretmanger",
 						"--previous-version=true",
-						"-- /bin/bash -c echo 'ACCESS_KEY: $AWS_ACCESS_KEY'",
+						"--",
+						"/bin/bash",
+						"-c",
+						"echo 'ACCESS_KEY: $AWS_ACCESS_KEY'",
 					},
 					Env: []corev1.EnvVar{
 						{Name: "SOME_VARIABLE", Value: "non-of-your-business"},
@@ -179,8 +189,8 @@ func Test_mutatingWebhook_mutateContainers(t *testing.T) {
 			args: args{
 				containers: []corev1.Container{
 					{
-						Name:    "MyContainer",
-						Image:   "some-image",
+						Name:    "MyGCPContainer",
+						Image:   "some-gcp-image",
 						Command: []string{"/bin/bash"},
 						Args:    []string{"-c", "echo 'API_KEY: $API_KEY'"},
 						Env: []corev1.EnvVar{
@@ -194,22 +204,22 @@ func Test_mutatingWebhook_mutateContainers(t *testing.T) {
 			wantErr: false,
 			wantedContainers: []corev1.Container{
 				{
-					Name:    "MyContainer",
-					Image:   "some-image",
+					Name:    "MyGCPContainer",
+					Image:   "some-gcp-image",
 					Command: []string{"/secrets-consumer/secrets-consumer-env"},
 					Args: []string{
 						"gcp",
 						"--project-id=project-x",
 						"--secret-name=gcp-test-secret",
 						"--secret-version=5",
-						"-- /bin/bash -c echo 'API_KEY: $API_KEY'",
+						"--google-application-credentials=/var/run/secret/cloud.google.com/service-account.json",
+						"--",
+						"/bin/bash",
+						"-c",
+						"echo 'API_KEY: $API_KEY'",
 					},
 					Env: []corev1.EnvVar{
 						{Name: "HOST", Value: "127.0.0.1"},
-						{
-							Name:  "GOOGLE_APPLICATION_CREDENTIALS",
-							Value: "/var/run/secret/cloud.google.com/service-account.json",
-						},
 					},
 					VolumeMounts: []corev1.VolumeMount{
 						{Name: "google-cloud-key", MountPath: "/var/run/secret/cloud.google.com"},
@@ -246,18 +256,23 @@ func Test_mutatingWebhook_mutateContainers(t *testing.T) {
 					Args: []string{
 						"vault",
 						"--role=x-role",
+						"--kubernetes-backend=/alt/kubernetes/path",
 						"--token-path=/tmp/key",
 						"--path=/secret/data/top-secret",
 						"--names-as-keys",
-						"-- /bin/bash -c echo 'API_KEY: $API_KEY'",
+						"--version=5",
+						"--",
+						"/bin/bash",
+						"-c",
+						"echo 'API_KEY: $API_KEY'",
 					},
 					Env: []corev1.EnvVar{
 						{Name: "HOST", Value: "127.0.0.1"},
 						{Name: "VAULT_ADDR", Value: "https://vault:8200"},
-						{Name: "VAULT_CACERT", Value: "/etc/tls/ca.pem"},
+						{Name: "VAULT_CACERT", Value: "/etc/tls/vault-ca.pem"},
 					},
 					VolumeMounts: []corev1.VolumeMount{
-						{Name: "vault-tls", MountPath: "/etc/tls/ca.pem", SubPath: "ca.pem"},
+						{Name: "vault-tls", MountPath: "/etc/tls", SubPath: "vault-ca.pem"},
 						{Name: "secrets-consumer-env", MountPath: "/secrets-consumer"},
 					},
 				},
@@ -290,22 +305,25 @@ func Test_mutatingWebhook_mutateContainers(t *testing.T) {
 					Command: []string{"/secrets-consumer/secrets-consumer-env"},
 					Args: []string{
 						"vault",
+						"--role=x-role",
 						"--backend=gcp",
 						"--google-application-credentials=/var/run/secret/cloud.google.com/service-account.json",
-						"--role=x-role",
 						"--token-path=/tmp/key",
 						"--path=/secret/data/top-secret",
 						"--names-as-keys",
-						"-- /bin/bash -c echo 'API_KEY: $API_KEY'",
+						"--",
+						"/bin/bash",
+						"-c",
+						"echo 'API_KEY: $API_KEY'",
 					},
 					Env: []corev1.EnvVar{
 						{Name: "HOST", Value: "127.0.0.1"},
 						{Name: "VAULT_ADDR", Value: "https://vault:8200"},
-						{Name: "VAULT_CACERT", Value: "/etc/tls/ca.pem"},
+						{Name: "VAULT_CACERT", Value: "/etc/tls/vault-ca.pem"},
 					},
 					VolumeMounts: []corev1.VolumeMount{
 						{Name: "google-cloud-key", MountPath: "/var/run/secret/cloud.google.com"},
-						{Name: "vault-tls", MountPath: "/etc/tls/ca.pem", SubPath: "ca.pem"},
+						{Name: "vault-tls", MountPath: "/etc/tls", SubPath: "vault-ca.pem"},
 						{Name: "secrets-consumer-env", MountPath: "/secrets-consumer"},
 					},
 				},
@@ -342,15 +360,16 @@ func Test_mutatingWebhook_mutateContainers(t *testing.T) {
 						`--secret-config={"path": "/some/secret/path-1", "version": "3", "use-secret-names-as-keys":  true}`,
 						`--secret-config={"path": "/some/secret/path-2"}`,
 						`--secret-config={"path": "/some/secret/path-3", "use-secret-names-as-keys":  true}`,
-						"-- /app",
+						"--",
+						"/app",
 					},
 					Env: []corev1.EnvVar{
 						{Name: "API_KEY", Value: "vault:API_KEY"},
 						{Name: "VAULT_ADDR", Value: "https://vault:8200"},
-						{Name: "VAULT_CACERT", Value: "/etc/tls/ca.pem"},
+						{Name: "VAULT_CACERT", Value: "/etc/tls/vault-ca.pem"},
 					},
 					VolumeMounts: []corev1.VolumeMount{
-						{Name: "vault-tls", MountPath: "/etc/tls/ca.pem", SubPath: "ca.pem"},
+						{Name: "vault-tls", MountPath: "/etc/tls", SubPath: "vault-ca.pem"},
 						{Name: "secrets-consumer-env", MountPath: "/secrets-consumer"},
 					},
 				},
@@ -388,15 +407,16 @@ func Test_mutatingWebhook_mutateContainers(t *testing.T) {
 						"--path=/secret/data/top-secret",
 						"--names-as-keys",
 						"--version=2",
-						"-- /app",
+						"--",
+						"/app",
 					},
 					Env: []corev1.EnvVar{
 						{Name: "API_KEY", Value: "vault:API_KEY"},
 						{Name: "VAULT_ADDR", Value: "https://vault:8200"},
-						{Name: "VAULT_CACERT", Value: "/etc/tls/ca.pem"},
+						{Name: "VAULT_CACERT", Value: "/etc/tls/vault-ca.pem"},
 					},
 					VolumeMounts: []corev1.VolumeMount{
-						{Name: "vault-tls", MountPath: "/etc/tls/ca.pem", SubPath: "ca.pem"},
+						{Name: "vault-tls", MountPath: "/etc/tls", SubPath: "vault-ca.pem"},
 						{Name: "secrets-consumer-env", MountPath: "/secrets-consumer"},
 					},
 				},

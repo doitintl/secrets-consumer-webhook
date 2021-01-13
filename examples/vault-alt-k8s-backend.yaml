@@ -2,6 +2,7 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name:  vault-alt-k8s-backend
+  namespace: default
 spec:
   backoffLimit: 0
   completions: 1
@@ -10,17 +11,15 @@ spec:
     metadata:
       name:  vault-alt-k8s-backend
       annotations:
-        vault.secret.manager/enabled: "true"
-        vault.secret.manager/service: "http://vault.default.svc.cluster.local:8200"
-        # vault.secret.manager/tls-secret: "vault-consul-ca"
-        vault.secret.manager/role: "tester"
-        vault.secret.manager/path: "secrets/dev/supserset-shell/"
-        vault.secret.manager/use-secret-names-as-keys: "true"
-        # vault.secret.manager/path: "secrets/some/secrets/path"
-        vault.secret.manager/auth-path: "auth/kubernetes/sandbox/us-west-2/login"
+#        vault.secret.manager/enabled: "false"
+#        vault.secret.manager/service: "https://vault.vault.svc.cluster.local:8200"
+#        vault.secret.manager/auth-path: "auth/kubernetes/sandbox/us-west-2/login"
+#        vvault.secret.manager/tls-secret: "vault-ca"
+#        vault.secret.manager/role: "manager-tester"
+#        vault.secret.manager/path: "secrets/v2/some/secrets/path"
     spec:
       restartPolicy: Never
-      serviceAccountName: tester
+      serviceAccountName: manager-tester
       containers:
       - name: alpine
         image: alpine
@@ -28,6 +27,7 @@ spec:
           - "/bin/sh"
         args:
           - "-c"
+          - "sleep 3600"
           - |
               echo "testing subtree each path as key name with a single value"
               [ -n "$API_KEY" ] && echo "API_KEY: $API_KEY"

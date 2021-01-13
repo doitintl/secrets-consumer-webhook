@@ -11,10 +11,10 @@ spec:
       name:  vault-explicit-keys
       annotations:
         vault.secret.manager/enabled: "true"
-        vault.secret.manager/service: "https://vault.default.svc.cluster.local:8200"
-        vault.secret.manager/tls-secret: "vault-consul-ca"
+        vault.secret.manager/service: "https://vault.vault.svc.cluster.local:8200"
+        # vault.secret.manager/tls-secret: "vault-consul-ca"
         vault.secret.manager/role: "tester"
-        vault.secret.manager/path: "secrets/v1/some/secrets/path"
+        vault.secret.manager/path: "secrets/v2/some/secrets/path"
     spec:
       restartPolicy: Never
       serviceAccountName: tester

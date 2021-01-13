@@ -17,8 +17,8 @@ type gcp struct {
 }
 
 func (gcp *gcp) mutateContainer(container corev1.Container) corev1.Container {
-	envVars := gcp.setEnvVars()
-	container.Env = append(container.Env, envVars...)
+	container = gcp.setArgs(container)
+
 	// Mount google service account key if given
 	if gcp.config.serviceAccountKeySecretName != "" {
 		container.VolumeMounts = append(container.VolumeMounts, []corev1.VolumeMount{
@@ -28,36 +28,27 @@ func (gcp *gcp) mutateContainer(container corev1.Container) corev1.Container {
 			},
 		}...)
 	}
+
 	return container
 }
 
-func (gcp *gcp) setEnvVars() []corev1.EnvVar {
-	var envVars []corev1.EnvVar
-	envVars = append(envVars, []corev1.EnvVar{
-		{
-			Name:  "SECRET_MANAGER",
-			Value: "gcp",
-		},
-		{
-			Name:  "SECRET_NAME",
-			Value: gcp.config.secretName,
-		}, {
-			Name:  "PROJECT_ID",
-			Value: gcp.config.projectID,
-		}, {
-			Name:  "SECRET_VERSION",
-			Value: gcp.config.secretVersion,
-		},
-	}...)
+func (gcp *gcp) setArgs(c corev1.Container) corev1.Container {
+	args := []string{"gcp"}
+	args = append(args, fmt.Sprintf("--project-id=%s", gcp.config.projectID))
 
 	if gcp.config.secretName != "" {
-		envVars = append(envVars, []corev1.EnvVar{
-			{
-				Name:  "GOOGLE_APPLICATION_CREDENTIALS",
-				Value: fmt.Sprintf("%s/%s", VolumeMountGoogleCloudKeyPath, GCPServiceAccountCredentialsFileName),
-			},
-		}...)
+		args = append(args, fmt.Sprintf("--secret-name=%s", gcp.config.secretName))
 	}
 
-	return envVars
+	if gcp.config.secretVersion != "" {
+		args = append(args, fmt.Sprintf("--secret-version=%s", gcp.config.secretVersion))
+	}
+
+	if gcp.config.secretName != "" {
+		args = append(args, fmt.Sprintf("--google-application-credentials=%s", fmt.Sprintf("%s/%s", VolumeMountGoogleCloudKeyPath, GCPServiceAccountCredentialsFileName)))
+	}
+
+	args = append(args, "--")
+	c.Args = append(args, c.Args...)
+	return c
 }

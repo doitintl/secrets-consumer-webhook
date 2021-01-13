@@ -51,7 +51,7 @@ func (vault *vault) mutateContainer(container corev1.Container) corev1.Container
 		}...)
 		container.VolumeMounts = append(container.VolumeMounts, corev1.VolumeMount{
 			Name:      volumeName,
-			MountPath: mountPath,
+			MountPath: VaultTLSMountPath,
 			SubPath:   vault.config.vaultCACert,
 		})
 	} else {
