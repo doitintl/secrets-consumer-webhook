@@ -40,19 +40,17 @@ func (vault *vault) mutateContainer(container corev1.Container) corev1.Container
 	}
 
 	if vault.config.tlsSecretName != "" {
-		mountPath := fmt.Sprintf("%s/%s", VaultTLSMountPath, vault.config.vaultCACert)
 		volumeName := VaultTLSVolumeName
 
 		container.Env = append(container.Env, []corev1.EnvVar{
 			{
 				Name:  "VAULT_CACERT",
-				Value: mountPath,
+				Value: fmt.Sprintf("%s%s", VaultTLSMountPath, vault.config.vaultCACert),
 			},
 		}...)
 		container.VolumeMounts = append(container.VolumeMounts, corev1.VolumeMount{
 			Name:      volumeName,
 			MountPath: VaultTLSMountPath,
-			SubPath:   vault.config.vaultCACert,
 		})
 	} else {
 		container.Env = append(container.Env, []corev1.EnvVar{

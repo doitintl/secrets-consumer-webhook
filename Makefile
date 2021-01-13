@@ -23,7 +23,7 @@ SECRETS_CONSUMER_WH_LDFLAGS := -X github.com/innovia/secrets-consumer-webhook/pk
 
 .PHONY: cross
 cross:
-	gox -osarch=$(OSARCH) -output "out/secrets-consumer-env-{{.OS}}-{{.Arch}}" -ldflags="$(SECRETS_CONSUMER_WH_LDFLAGS)"
+	gox -osarch=$(OSARCH) -output "out/secrets-consumer-webhook-{{.OS}}-{{.Arch}}" -ldflags="$(SECRETS_CONSUMER_WH_LDFLAGS)"
 
 docker-build:
 	docker build -t $(DOCKER_OWNER)/secrets-consumer-webhook:$(VERSION) . --build-arg VERSION=$(VERSION) --build-arg COMMIT=$(COMMIT)

@@ -272,7 +272,7 @@ func Test_mutatingWebhook_mutateContainers(t *testing.T) {
 						{Name: "VAULT_CACERT", Value: "/etc/tls/vault-ca.pem"},
 					},
 					VolumeMounts: []corev1.VolumeMount{
-						{Name: "vault-tls", MountPath: "/etc/tls", SubPath: "vault-ca.pem"},
+						{Name: "vault-tls", MountPath: "/etc/tls/"},
 						{Name: "secrets-consumer-env", MountPath: "/secrets-consumer"},
 					},
 				},
@@ -323,7 +323,7 @@ func Test_mutatingWebhook_mutateContainers(t *testing.T) {
 					},
 					VolumeMounts: []corev1.VolumeMount{
 						{Name: "google-cloud-key", MountPath: "/var/run/secret/cloud.google.com"},
-						{Name: "vault-tls", MountPath: "/etc/tls", SubPath: "vault-ca.pem"},
+						{Name: "vault-tls", MountPath: "/etc/tls/"},
 						{Name: "secrets-consumer-env", MountPath: "/secrets-consumer"},
 					},
 				},
@@ -369,7 +369,7 @@ func Test_mutatingWebhook_mutateContainers(t *testing.T) {
 						{Name: "VAULT_CACERT", Value: "/etc/tls/vault-ca.pem"},
 					},
 					VolumeMounts: []corev1.VolumeMount{
-						{Name: "vault-tls", MountPath: "/etc/tls", SubPath: "vault-ca.pem"},
+						{Name: "vault-tls", MountPath: "/etc/tls/"},
 						{Name: "secrets-consumer-env", MountPath: "/secrets-consumer"},
 					},
 				},
@@ -416,7 +416,7 @@ func Test_mutatingWebhook_mutateContainers(t *testing.T) {
 						{Name: "VAULT_CACERT", Value: "/etc/tls/vault-ca.pem"},
 					},
 					VolumeMounts: []corev1.VolumeMount{
-						{Name: "vault-tls", MountPath: "/etc/tls", SubPath: "vault-ca.pem"},
+						{Name: "vault-tls", MountPath: "/etc/tls/"},
 						{Name: "secrets-consumer-env", MountPath: "/secrets-consumer"},
 					},
 				},
