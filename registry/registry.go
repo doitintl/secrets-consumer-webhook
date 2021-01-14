@@ -15,6 +15,7 @@
 package registry
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -198,7 +199,8 @@ type ContainerInfo struct {
 }
 
 func (k *ContainerInfo) readDockerSecret(namespace, secretName string) (map[string][]byte, error) {
-	secret, err := k.clientset.CoreV1().Secrets(namespace).Get(secretName, metav1.GetOptions{})
+	ctx := context.Background()
+	secret, err := k.clientset.CoreV1().Secrets(namespace).Get(ctx, secretName, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}

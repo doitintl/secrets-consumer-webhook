@@ -112,7 +112,8 @@ func hasSecretPrefix(value string) bool {
 }
 
 func (mw *mutatingWebhook) getDataFromConfigmap(cmName string, ns string) (map[string]string, error) {
-	configMap, err := mw.k8sClient.CoreV1().ConfigMaps(ns).Get(cmName, metav1.GetOptions{})
+	ctx := context.Background()
+	configMap, err := mw.k8sClient.CoreV1().ConfigMaps(ns).Get(ctx, cmName, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -120,7 +121,8 @@ func (mw *mutatingWebhook) getDataFromConfigmap(cmName string, ns string) (map[s
 }
 
 func (mw *mutatingWebhook) getDataFromSecret(secretName string, ns string) (map[string][]byte, error) {
-	secret, err := mw.k8sClient.CoreV1().Secrets(ns).Get(secretName, metav1.GetOptions{})
+	ctx := context.Background()
+	secret, err := mw.k8sClient.CoreV1().Secrets(ns).Get(ctx, secretName, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
